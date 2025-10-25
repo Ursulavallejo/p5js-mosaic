@@ -3,7 +3,9 @@ Geometric Mosaic Playground
 A bold and playful composition made with p5.js, combining grids, circles, and crosses in a dynamic layout.
 This project explores generative geometry, color balance, and random composition, inspired by modern graphic design and Bauhaus aesthetics.
 
-[![Mosaic preview](./assets/mosaic.png)](https://p5js-mosaic.netlify.app/)
+<img src="./assets/mosaicP5org.png" alt="Mosaic preview" width="600"/>
+
+🔗 [Mosaic preview](https://p5js-mosaic.netlify.app)
 
 ✨ Features
 
