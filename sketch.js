@@ -2,7 +2,7 @@
 // Created with p5.js
 
 // ---- Config ----
-const CELL_SIZE = 168 // Base cell size
+const CELL_SIZE = 178 // Base cell size
 const CHANGE_EVERY = 200 // Frames between module switches
 let cols,
   rows,
