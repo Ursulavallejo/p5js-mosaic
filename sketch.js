@@ -1,5 +1,5 @@
 // === GEOMETRIC MOSAIC ===
-// Created with p5.js
+// Created with p5.js (functional version)
 
 // ---- Config ----
 const CELL_SIZE = 178 // Base cell size
@@ -38,71 +38,62 @@ function initGrid() {
   cols = ceil(width / CELL_SIZE)
   rows = ceil(height / CELL_SIZE)
   cells = []
+
   for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
-      cells.push(new Cell(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE))
+      const x = i * CELL_SIZE
+      const y = j * CELL_SIZE
+      cells.push(createCell(x, y, CELL_SIZE))
     }
   }
+
   background(0)
 }
 
-// ---- Cell class ----
-class Cell {
-  constructor(x, y, s) {
-    this.x = x
-    this.y = y
-    this.s = s
-    this.type = pick(Module.types)
-    this.nextType = this.type
-    this.lastSwitch = frameCount
-    this.bg = color(0) // black background
-    this.seed = random(10000) // unique per-cell seed
-  }
+// ---- Cell factory ----
+function createCell(x, y, s) {
+  const seed = random(10000)
+  let type = pick(ModuleTypes)
+  let lastSwitch = frameCount
 
-  maybeSwitch() {
-    if ((frameCount - this.lastSwitch) % CHANGE_EVERY === 0) {
-      this.nextType = pick(Module.types)
-      this.type = this.nextType
-      this.lastSwitch = frameCount + rndi(0, 10) // desynchronize slightly
-    }
-  }
+  return {
+    draw(t) {
+      // Check if it’s time to switch the module
+      if ((frameCount - lastSwitch) % CHANGE_EVERY === 0) {
+        type = pick(ModuleTypes)
+        lastSwitch = frameCount + rndi(0, 10)
+      }
 
-  draw(t) {
-    this.maybeSwitch()
+      // Background
+      fill(0)
+      rect(x, y, s, s)
 
-    // Cell background
-    fill(0)
-    rect(this.x, this.y, this.s, this.s)
+      // Transform and draw module
+      push()
+      translate(x + s / 2, y + s / 2)
 
-    // Call the active module
-    push()
-    translate(this.x + this.s / 2, this.y + this.s / 2)
+      const n = noise(seed, t * 0.05)
+      const rot = map(n, 0, 1, 0, TWO_PI / 2)
+      rotate(rot)
 
-    // Slower rotation (was t * 0.1)
-    const n = noise(this.seed, t * 0.05)
-    const rot = map(n, 0, 1, 0, TWO_PI / 2)
-    rotate(rot)
-
-    this.type.render(this.s, t, palette, this.seed)
-    pop()
+      type.render(s, t, palette, seed)
+      pop()
+    },
   }
 }
 
-// ---- Graphic modules ----
-class Module {
-  static types = []
-
-  // Dots: matrix of filled circles
-  // Dots: matrix of filled circles (with slow color timer)
-  static Dots = {
+// ---- Modules (as plain objects) ----
+const ModuleTypes = [
+  {
+    name: 'Dots',
     render: (s, t, pal, seed) => {
       const n = noise(seed, t * 0.04)
       const cols = floor(map(n, 0, 1, 2, 5))
       const r = s / (cols * 2.2)
       const step = s / cols
 
-      // --- Slow color change timer ---
-      const period = 3000 // milliseconds between color changes (3s)
+      // Slow color timer (every 3s)
+      const period = 3000
       const idx = floor(int((millis() + seed * 1000) / period) % pal.length)
       const c = pal[idx]
       fill(c)
@@ -113,25 +104,21 @@ class Module {
         }
       }
     },
-  }
-
-  // Plus: thick crosses
-  static Plus = {
+  },
+  {
+    name: 'Plus',
     render: (s, t, pal, seed) => {
       const c = pick(pal)
-      // Slower (was t * 0.6)
       const thick = map(noise(seed + 1, t * 0.2), 0, 1, s * 0.12, s * 0.32)
       fill(c)
       rectMode(CENTER)
       rect(0, 0, s * 0.8, thick, 4)
       rect(0, 0, thick, s * 0.8, 4)
     },
-  }
-
-  // Stripes: horizontal or vertical bands
-  static Stripes = {
+  },
+  {
+    name: 'Stripes',
     render: (s, t, pal, seed) => {
-      // Slower (was t * 0.15)
       const k = floor(map(noise(seed + 2, t * 0.08), 0, 1, 3, 9))
       const c = pick(pal)
       const mode = noise(seed + 3) < 0.5 ? 'H' : 'V'
@@ -152,12 +139,10 @@ class Module {
         }
       }
     },
-  }
-
-  // Checker: grid-like structure
-  static Checker = {
+  },
+  {
+    name: 'Checker',
     render: (s, t, pal, seed) => {
-      // Slower (was t * 0.2)
       const n = floor(map(noise(seed + 4, t * 0.1), 0, 1, 3, 6))
       const c = pick(pal)
       const w = s / n
@@ -171,10 +156,9 @@ class Module {
       }
       noStroke()
     },
-  }
-
-  // Disc: large circular shapes
-  static Disc = {
+  },
+  {
+    name: 'Disc',
     render: (s, t, pal, seed) => {
       const outer = pick(pal)
       const inner = pick(pal)
@@ -183,15 +167,7 @@ class Module {
       fill(inner)
       circle(0, 0, s * 0.5)
     },
-  }
-}
-
-Module.types = [
-  Module.Dots,
-  Module.Plus,
-  Module.Stripes,
-  Module.Checker,
-  Module.Disc,
+  },
 ]
 
 // ---- Main draw loop ----
@@ -202,12 +178,7 @@ function draw() {
 }
 
 // ---- Quick controls ----
-// S: save frame, R: re-randomize modules
 function keyPressed() {
   if (key === 'S') saveCanvas('frame', 'png')
-  if (key === 'R')
-    cells.forEach((c) => {
-      c.type = pick(Module.types)
-      c.lastSwitch = frameCount
-    })
+  if (key === 'R') initGrid()
 }

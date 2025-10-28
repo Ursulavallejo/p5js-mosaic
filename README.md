@@ -20,3 +20,8 @@ An exploration of structure and spontaneity — where grids, circles, and crosse
 
 🛠️ Built with
 p5.js · JavaScript · Creative Coding
+
+## 📜 License
+
+© 2025 **Ursula Vallejo Janne**
+Released under the **MIT License** — feel free to use, remix, and learn from this project for educational or artistic purposes.
